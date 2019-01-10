@@ -10,6 +10,7 @@ import json
 import csv
 import time
 import datetime
+import os
 
 
 # insert your credentials here see https://www.udemy.com/user/edit-api-clients
@@ -32,11 +33,15 @@ def get_all_course_ids():
     retries = 0
     ids = []
     url = api_url
-    
+    page = 1
+
+    print('getting all course ids')
     while True:
         response = requests.get(url, headers=HEADERS, auth=(CLIENT_ID, CLIENT_SECRET), params={'page_size': page_size})
 
         if response.status_code == requests.codes.ok:
+            print('grabbing page %s' % (page))
+            page += 1
             response_json = response.json()
             for result in response_json['results']:
                 ids.append(str(result['id'])) 
@@ -48,6 +53,7 @@ def get_all_course_ids():
         else:
             if retries <= max_retries:
                 retries += 1
+                print('sleeping before next retry')
                 time.sleep(30) 
     return ids
 
@@ -58,7 +64,7 @@ def get_course_details(course_id):
     max_retries = 5
     retries = 0
     url = api_url + course_id
-    
+
     response = requests.get(url, headers=HEADERS, auth=(CLIENT_ID, CLIENT_SECRET), params={'fields[course]': '@all'})
 
     if response.status_code == requests.codes.ok:
@@ -80,19 +86,23 @@ def get_course_details(course_id):
     else:
         if retries <= max_retries:
             retries += 1
+            print('sleeping before next retry')
             time.sleep(30)
     
 
                             
 def write_csv(line):
 
-    header = ['id', 'title', 'url', 'price', 'rating', 'created', 'last_update_date', 'num_reviews', 'num_subscribers', 'earnings', 'content_info']
+    csv_header = ['id', 'title', 'url', 'price', 'rating', 'created', 'last_update_date', 'num_reviews', 'num_subscribers', 'earnings', 'content_info']
 
     datestamp = datetime.datetime.now().strftime('%Y-%m-%d')
     filename = 'udemy_courses_%s.csv' % (datestamp)
+    file_exists = os.path.isfile(filename)
 
-    with open(filename, "w") as csv_file:
+    with open(filename, 'a') as csv_file:
         writer = csv.writer(csv_file, delimiter=';')
+        if not file_exists:
+            writer.writerrow(csv_header)
         print(line)
         writer.writerow(line)
 
