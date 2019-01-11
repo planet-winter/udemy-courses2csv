@@ -5,13 +5,16 @@
 # https://www.udemy.com/developers/affiliate/
 #
 
+__author__ = 'Daniel Winter'
+
+
 import requests
 import json
 import csv
 import time
 import datetime
 import os
-
+import sys
 
 # insert your credentials here see https://www.udemy.com/user/edit-api-clients
 CLIENT_ID = ''
@@ -54,7 +57,10 @@ def get_all_course_ids():
             if retries <= max_retries:
                 retries += 1
                 print('sleeping before next retry')
-                time.sleep(30) 
+                time.sleep(30)
+            else:
+                print('ERROR: Failed to fetch course ids after %s retries' % (max_retries))
+                sys.exit(1)
     return ids
 
 
@@ -65,31 +71,34 @@ def get_course_details(course_id):
     retries = 0
     url = api_url + course_id
 
-    response = requests.get(url, headers=HEADERS, auth=(CLIENT_ID, CLIENT_SECRET), params={'fields[course]': '@all'})
+    while True:
+        response = requests.get(url, headers=HEADERS, auth=(CLIENT_ID, CLIENT_SECRET), params={'fields[course]': '@all'})
 
-    if response.status_code == requests.codes.ok:
-        response_json = response.json()
-
-        title = response_json['title']
-        url = response_json['url']
-        price = response_json['price']
-        rating = str(response_json['rating'])
-        created = response_json['created']
-        last_update_date = response_json['last_update_date']
-        num_reviews = str(response_json['num_reviews'])
-        num_subscribers = str(response_json['num_subscribers'])
-        earnings = response_json['earnings']
-        content_info = response_json['content_info']
-
-        return [course_id, title, url, price, rating, created, last_update_date, num_reviews, num_subscribers, earnings, content_info]
-                            
-    else:
-        if retries <= max_retries:
-            retries += 1
-            print('sleeping before next retry')
-            time.sleep(30)
-    
-
+        if response.status_code == requests.codes.ok:
+            response_json = response.json()
+            
+            title = response_json['title']
+            url = response_json['url']
+            price = response_json['price']
+            rating = str(response_json['rating'])
+            created = response_json['created']
+            last_update_date = response_json['last_update_date']
+            num_reviews = str(response_json['num_reviews'])
+            num_subscribers = str(response_json['num_subscribers'])
+            earnings = response_json['earnings']
+            content_info = response_json['content_info']
+            
+            return [course_id, title, url, price, rating, created, last_update_date, num_reviews, num_subscribers, earnings, content_info]
+        
+        else:
+            if retries <= max_retries:
+                retries += 1
+                print('sleeping before next retry')
+                time.sleep(30)
+            else:
+                print('ERROR: Failed to fetch course details after %s retries' % (max_retries))
+                sys.exit(1)
+                
                             
 def write_csv(line):
 
@@ -102,7 +111,7 @@ def write_csv(line):
     with open(filename, 'a') as csv_file:
         writer = csv.writer(csv_file, delimiter=';')
         if not file_exists:
-            writer.writerrow(csv_header)
+            writer.writerow(csv_header)
         print(line)
         writer.writerow(line)
 
