@@ -109,7 +109,7 @@ def write_csv(line):
     file_exists = os.path.isfile(filename)
 
     with open(filename, 'a') as csv_file:
-        writer = csv.writer(csv_file, delimiter=';')
+        writer = csv.writer(csv_file, delimiter=';', quotechar='"')
         if not file_exists:
             writer.writerow(csv_header)
         print(line)
@@ -119,6 +119,10 @@ def write_csv(line):
                             
 def main():
 
+    if CLIENT_ID == '' or CLIENT_SECRET == '':
+        print('ERROR: You did not provide a CLIENT_ID or CLIENT_SECRET')
+        sys.exit(1)
+        
     for course_id in get_all_course_ids():
         write_csv(get_course_details(course_id))
                             
